@@ -1,0 +1,41 @@
+<FOAM DO='PING' />
+
+<FOAM DO='CREATE' PROJECT='/home/spr/home/trial.spec' NAME='trial' REMOVE='true' />
+
+<FOAM DO='PROJECT' PROJECT='/home/spr/home/trial.spec' />
+
+<FOAM DO='EXIT' />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

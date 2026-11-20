@@ -1,0 +1,89 @@
+<project name='foam' default='all'>
+
+   <property file='build.properties' />
+
+   <available file="./build.properties" type='file' property='setup.done' />
+   <path id='setuppath'>
+      <pathelement location='..' />
+   </path>
+   <path id='foampath'>
+      <pathelement location='.' />
+   </path>
+   <property name='setupfile' refid='setuppath' />
+   <property name='foamfile' refid='foampath' />
+   <property name='PRO' value='${setupfile}' />
+   <property name='FOAM' value='${foamfile}' />
+
+   <property name='TDIR' value='/home/spr/foamtest' />
+   <property name='EDIR' value='/home/spr/Eclipse' />
+
+
+   <target name='setup' unless='setup.done'>
+      <echo file='./build.properties' message="PRO=${setupfile}${line.separator}" />
+      <echo file='./build.properties' message='FOAM=${foamfile}${line.separator}' append='true' />
+      <mkdir dir='./java/edu/brown/cs/foam' />
+      <mkdir dir='./lib' />
+      <property name='PRO' value='${setupfile}' />
+      <property name='FOAM' value='${foamfile}' />
+   </target>
+
+
+   <available file='${PRO}/ivy' type="dir" property="ivy.present" />
+   <property name='IVYLIB' value='${PRO}/ivy/lib' />
+
+   <property name='FOAMLIB' value='${FOAM}/lib' />
+   <path id='spr.classpath'>
+     <pathelement location='${FOAM}/java' />
+     <pathelement location='${FOAM}/javasrc' />
+     <fileset dir='${FOAMLIB}' includes='*.jar' />
+     <fileset dir='${IVYLIB}' includes='ivy.jar' />
+     <fileset dir='${IVYLIB}' includes='junit.jar' />
+     <fileset dir='${IVYLIB}' includes='asm.jar' />
+     <fileset dir='${IVYLIB}' includes='json.jar' />
+     <fileset dir='${PRO}/ivy/lib/eclipsejar' includes='*.jar' />
+     <pathelement location='${FOAM}/resources' />
+  </path>
+
+  <target name='all' depends='setup,compile,jar' />
+
+  <target name='compile' depends='setup'>
+     <javac srcdir='.' destdir='${FOAM}/java' debug='on' deprecation='on'
+		target='22' source='22'
+		includeantruntime='false'>
+	<classpath refid='spr.classpath' />
+     </javac>
+  </target>
+
+  <target name='jar' depends='setup,compile'>
+     <jar destfile='foam.jar'>
+	<manifest>
+	   <attribute name='Main-Class' value='edu.brown.cs.foam foam.GrainMain' />
+	</manifest>
+	<fileset dir='${FOAM}/java' includes='**/*.class' />
+	<fileset dir='${FOAM}/resources' includes='*.xml' />
+	<fileset dir='${FOAM}/resources' includes='*.proto' />
+     </jar>
+   </target>
+
+   <target name='bubbles' depends='all'>
+      <jar destfile='foam.jar'>
+	 <manifest>
+	    <attribute name="Bubbles-start" value='edu.brown.cs.foambb.bird.BirdFactory' />
+	    <attribute name="Bubbles-palette" value='foambb.palette' />
+	    <attribute name="Bubbles-resource" value='Bird.props Foam.props' />
+	    <attribute name="Bubbles-depends" value='' />
+	 </manifest>
+	 <fileset dir='${FOAM}/java' includes='**/*.class' />
+	 <fileset dir='${PRO}/foambb/java' includes='**/*.class' />
+	 <fileset dir='${FOAM}/resources' includes='*.xml' />
+	 <fileset dir='${FOAM}/resources' includes='images/*.png' />
+	 <fileset dir='${FOAM}/resources' includes='Foam.props' />
+<!--	 <fileset dir='${PRO}/ivy/java' includes='**/*.class' />                        -->
+	 <fileset dir='${PRO}/foambb' includes='Bird.props' />
+	 <fileset dir='${PRO}/foambb' includes='foambb.palette' />
+      </jar>
+      <copy file='foam.jar' tofile='${PRO}/bubbles/dropins/foam.jar' verbose='true' />
+      <copy file='foam.jar' tofile='${PRO}/bubbles/dropins.export/foam.jar' verbose='true' />
+   </target>
+
+</project>
