@@ -129,9 +129,15 @@ FideSystem(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-public FoamProjectManager getProjectManager()
+public FideProjectManager getProjectManager()
 {
    return project_manager;
+}
+
+
+public FideVersionManager getVersionManager()
+{
+   return version_manager;
 }
 
 

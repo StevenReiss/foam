@@ -55,6 +55,7 @@ String [] PROJECT_DIRS = {
       "design",
       "design/main",
       "design/test",
+      "scenarios",
       "lib",
 };
 

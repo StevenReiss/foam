@@ -28,6 +28,8 @@ import java.io.IOException;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.foam.foam.FoamException;
+import edu.brown.cs.foam.foam.FoamVersionManager;
+import edu.brown.cs.ivy.exec.IvyExec;
 import edu.brown.cs.ivy.file.IvyFile;
 import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.ivy.xml.IvyXml;
@@ -94,7 +96,6 @@ FoamCommand createCommand(Element xml)
       case FIND :
       case HIERARCHY :
       case QUERY :
-      case SETVERSION :
       case STATUS :
       case SYNC :
       case UPDATE :
@@ -114,7 +115,12 @@ FoamCommand createCommand(Element xml)
       case PROJECT :
          rslt = new CommandProject(xml);
          break;
-         
+      case SETVERSION :
+         rslt = new CommandSetVersion(xml);
+         break;
+      case SHELL :
+         rslt = new CommandShell(xml);
+         break;
     }
    
    return rslt;
@@ -129,7 +135,10 @@ FoamCommand createCommand(Element xml)
 
 private abstract class CommandBase implements FoamCommand {
    
+   private String command_name;
+   
    CommandBase(Element xml) {
+      command_name = IvyXml.getAttrString(xml,"DO");
     }
    
    @Override public void process(IvyXmlWriter rslt) {
@@ -160,6 +169,8 @@ private abstract class CommandBase implements FoamCommand {
        }
     }
    
+   @Override public String getCommandName()             { return command_name; }
+   
    @Override public boolean isImmediate()               { return true; }
    
    protected abstract void localProcess(IvyXmlWriter rslt) throws Exception;
@@ -180,13 +191,41 @@ private class CommandPing extends CommandBase {
       super(xml);
     }
    
-   @Override public String getCommandName()             { return "PING"; }
-   
    @Override public void localProcess(IvyXmlWriter xw) throws Exception {
       xw.text("PONG");
     }
    
 }       // end of inner class CommandPing
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      SHELL command                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandShell extends CommandBase {
+   
+   private String shell_command;
+   
+   CommandShell(Element xml) {
+      super(xml);
+      shell_command = IvyXml.getTextElement(xml,"COMMAND");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      try {
+         IvyExec ex = new IvyExec(shell_command,
+               IvyExec.READ_OUTPUT|IvyExec.ERROR_OUTPUT);
+         String cnts = IvyFile.loadFile(ex.getInputStream());
+         xw.cdataElement("OUTPUT",cnts);
+       }
+      catch (Throwable t) {
+         throw new FoamException("Problem running command",t);
+       }
+    }
+   
+}       // end of inner class CommandShell
 
 
 
@@ -204,8 +243,6 @@ private class CommandProject extends CommandBase {
       super(xml);
       project_dir = IvyXml.getAttrString(xml,"PROJECT");
     }
-   
-   @Override public String getCommandName()             { return "PROJECT"; }
    
    @Override public void localProcess(IvyXmlWriter xw) throws Exception {
       foam_main.getProjectManager().setProject(project_dir);
@@ -234,18 +271,55 @@ private class CommandCreate extends CommandBase {
       remove_old = IvyXml.getAttrBool(xml,"REMOVE"); 
     }
    
-   @Override public String getCommandName()             { return "CREATE"; }
-   
-   @Override public void localProcess(IvyXmlWriter xw) throws Exception {
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
       File dirf = new File(project_dir);
       if (dirf.exists() && remove_old) {
-         IvyFile.remove(dirf);
+         try {
+            IvyFile.remove(dirf);
+          }
+         catch (IOException e) {
+            throw new FoamException("Can't remove previous project",e);
+          }
        }
       foam_main.getProjectManager().createProject(project_name,project_dir);
     }
 
 }       // end of inner class CommandProject
 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Command SETVERSION                                                      */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandSetVersion extends CommandBase {
+
+   private String version_name;
+   
+   CommandSetVersion(Element xml) {
+      super(xml);
+      version_name = IvyXml.getAttrString(xml,"VERSION");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      if (version_name == null || version_name.isBlank()) {
+         throw new FoamException("No version name specified");
+       }
+      FoamVersionManager vm = foam_main.getVersionManager();
+      if (version_name.equals("NEXT")) {
+         vm.redo();
+       }
+      else if (version_name.equals("PREVIOUS")) {
+         vm.undo();
+       }
+      else {
+         vm.setVersion(version_name);
+       }
+    }
+   
+}       // end of inner class CommandSetVersion
 
 
 

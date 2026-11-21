@@ -69,7 +69,8 @@ enum FoamCommandType {
    EXIT,
    PROJECT,
    CREATE,
-   CLEAR
+   CLEAR,
+   SHELL
 }
 
 enum FoamLinkType {

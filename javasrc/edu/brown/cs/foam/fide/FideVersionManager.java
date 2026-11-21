@@ -28,6 +28,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +62,6 @@ private static final String GIT_PRIOR_FORMAT = "%H%x09%h%x09%P%x09%d%n";
 
 
 
-
 /********************************************************************************/
 /*                                                                              */
 /*      Constructors                                                            */
@@ -74,7 +74,7 @@ FideVersionManager(FideSystem fs)
    project_manager = null;
    git_root = null;
    current_version = null;
-   version_map = new LinkedHashMap<>();
+   version_map = new HashMap<>();
    
    git_command = foam_main.getProperty("foam.git.command","git");
    
@@ -155,26 +155,26 @@ private void startGitRepo() throws FoamException
        }
     }
    
-   StringCommand cmd = new StringCommand("@init --bare " + git_root);
+   GitCommand cmd = new GitCommand("@init --bare " + git_root);
    if (cmd.getStatus() != 0) {
       throw new FoamException("Git init failed"); 
     }
-   StringCommand cmd3 = new StringCommand(
+   GitCommand cmd3 = new GitCommand(
          "config --local status.showUntrackedFiles no");
    if (cmd3.getStatus() != 0) {
       throw new FoamException("Git config failed");
     }
-   StringCommand cmd1 = new StringCommand("add .");
+   GitCommand cmd1 = new GitCommand("add .");
    if (cmd1.getStatus() != 0) {
       throw new FoamException("Git add failed");
     }
-   StringCommand cmd2 = new StringCommand("commit -m 'Initial commit'");
+   GitCommand cmd2 = new GitCommand("commit -m 'Initial commit'");
    if (cmd2.getStatus() != 0) {
       throw new FoamException("Git commit failed");
     }
-   StringCommand cmd4 = new StringCommand("tag -a v1.0.0 -m 'Initial commit'");
+   GitCommand cmd4 = new GitCommand("tag -a v1.0 -m 'Initial commit'");
    if (cmd4.getStatus() != 0) {
-      throw new FoamException("Git tagfailed");
+      throw new FoamException("Git tag failed");
     }
 }
 
@@ -186,7 +186,7 @@ private void findVersions()
    
    String head = null;
    String cmd1 = "log --reverse '--pretty=format:" + GIT_PRIOR_FORMAT + "'";
-   StringCommand cmd = new StringCommand(cmd1);
+   GitCommand cmd = new GitCommand(cmd1);
    StringTokenizer tok = new StringTokenizer(cmd.getContent(),"\n\r");
    VersionInfo last = null;
    Map<String,String> priormap = new HashMap<>();
@@ -219,6 +219,9 @@ private void findVersions()
           }
          VersionInfo vi = new VersionInfo(rev,srev,null,last,tag);
          version_map.put(rev,vi);
+         version_map.put(srev,vi);
+         if (tag != null) version_map.put(tag,vi);
+         
          if (prior != null) priormap.put(rev,prior);
          last = vi;
        }
@@ -238,15 +241,120 @@ private void findVersions()
 
 /********************************************************************************/
 /*                                                                              */
-/*      Abstract Method Implementations                                         */
+/*      Version management                                                      */
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String setVersion(String arg1)
+@Override public String setVersion(String version) throws FoamException
 {
-   // method body goes here
+   if (version == null) {
+      throw new FoamException("Version should not be null");
+    }
+   VersionInfo vi = version_map.get(version);
+   if (vi == null) {
+      throw new FoamException("Version " + version + " doesn't exist");
+    }
+   
+   commit(null);
+   
+   GitCommand cmd1 = new GitCommand("revert " + vi.getHash());
+   if (cmd1.getStatus() != 0) {
+      throw new FoamException("Set version failed");
+    }
+   
+   current_version = vi;
+   
+   return vi.getTag();
+}
+
+
+@Override public String commit(String tag0) throws FoamException
+{
+   String chngs = getChanges();
+   if (chngs == null || chngs.isEmpty()) {
+      // nothing changed
+      return current_version.getTag();
+    }
+   try (BufferedReader br = new BufferedReader(new StringReader(chngs))) {
+      for ( ; ; ) {
+         String ln = br.readLine();
+         if (ln == null) break;
+         ln = ln.trim();
+         if (ln.startsWith("??")) {
+            String file = ln.substring(2).trim();
+            File f1 = project_manager.getProjectDirectory();
+            File f2 = new File(f1,file);
+            GitCommand cmd1 = new GitCommand("add " + f2.getAbsolutePath());
+            if (cmd1.getStatus() != 0) {
+               throw new FoamException("Git add failed for commit " + file);
+             }
+          }
+       }
+    }
+   catch (IOException e) {
+      IvyLog.logE("FIDE","Unexpected exception reading string",e);
+    }
+   
+   GitCommand cmd2 = new GitCommand("commit -a");
+   if (cmd2.getStatus() != 0) {
+      throw new FoamException("git commit failed");
+    }
+   
+   String tag = tag0;
+   String oldtag = current_version.getTag();
+   if (tag == null) {
+      tag = computeNextVersion(oldtag);
+    }
+   GitCommand cmd3 = new GitCommand("tag -a " + tag + " -m 'Version after " + oldtag + "'"); 
+   if (cmd3.getStatus() != 0) {
+      throw new FoamException("Git tag failed");
+    }
+      
    return null;
 }
+
+private String getChanges() throws FoamException
+{
+   GitCommand cmd = new GitCommand("status --porcelain");
+   if (cmd.getStatus() != 0) {
+      throw new FoamException("Git status failed");
+    }
+   
+   String cnts = cmd.getContent();
+   if (cnts.isBlank()) return null;
+   
+   return cnts;
+}
+
+
+private String computeNextVersion(String prev)
+{
+   // might want to handle duplicate version names
+   
+   int idx = prev.lastIndexOf(".");
+   if (idx < 0) {
+      return prev + ".1";
+    }
+   String last = prev.substring(idx+1);
+   if (last.isBlank()) {
+      return prev + "1";
+    }
+   try {
+      int lno = Integer.parseInt(last);
+      return prev.substring(0,idx+1) + (lno+1);
+    } 
+   catch (NumberFormatException e) {
+      return prev + ".1";
+    }
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Abstract Method Implementations                                         */
+/*                                                                              */
+/********************************************************************************/
 
 @Override public String getDifferences(String arg0,String arg1,String arg2)
 {
@@ -256,28 +364,31 @@ private void findVersions()
 }
 
 
-@Override public String undo()
+@Override public String undo() throws FoamException
 {
-   // method body goes here
+   // do a commit to save any changes
+   // get current_version.lastVersion -- if null throw exception
+   // return setVersion of that
    return null;
 }
+
+
+@Override public String redo() throws FoamException
+{
+   // get curernt_version.nextVersion -- if null throw exception
+   // stash any changes ???
+   // set version next version
+   return null;
+}
+
 
 @Override public List<String> getAvailableVersions()
 {
-   // method body goes here
+   // if changes -- label current version as HOME? else ignore
+   // go forward from current version + go backward from current version
+   // to build a list of VersionInfo
+   // convert to list of Strings
 
-   return null;
-}
-
-@Override public String redo()
-{
-   // method body goes here
-   return null;
-}
-
-@Override public String commit(String arg1)
-{
-   // method body goes here
    return null;
 }
 
@@ -296,12 +407,12 @@ protected interface CommandCallback {
 }       // end of inner interface CommandCallback
 
 
-protected class StringCommand implements CommandCallback {
+protected class GitCommand implements CommandCallback {
 
    private StringBuffer msg_content;
    private int command_status;
    
-   StringCommand(String cmd) {
+   GitCommand(String cmd) {
       msg_content = new StringBuffer();
       command_status = 0;
       runCommand(cmd,this);
