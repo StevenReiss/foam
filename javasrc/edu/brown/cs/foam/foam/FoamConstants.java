@@ -39,16 +39,23 @@ enum FoamDocumentType {
    DESCRIPTION,
    REQUIREMENTS,
    FEATURES,
-   SCENARIOS,
-   USER_INTERFACE,
-   TEST_CASES,
-   DESIGN
+   SCENARIO,
+   UI_IMAGE,
+   UI_DESIGN,
+   TEST_CASE,
+   DESIGN,
+   RESOURCE,
+   OVERVIEW,
+   ARCHITECTURE,
+   LIBRARY,
 }
 
 
 enum FoamElementType {
+   DOCUMENT,
    DESIGN_ELEMENT,
-   OUTLINE_SECTION
+   OUTLINE_SECTION,
+   SECTION,
 }
 
 
@@ -70,7 +77,8 @@ enum FoamCommandType {
    PROJECT,
    CREATE,
    CLEAR,
-   SHELL
+   SHELL,
+   VERSIONS,
 }
 
 enum FoamLinkType {
@@ -78,6 +86,19 @@ enum FoamLinkType {
    EXPLICIT,
    CROSS_DOCUMENT,
 }
+
+
+String [] FOAM_PROJECT_DIRS = {
+      "metadata",
+      "resources",
+      "specification",
+      "design",
+      "design/main",
+      "design/test",
+      "scenarios",
+      "userinterfaces",
+      "lib",
+};
 
 
 }

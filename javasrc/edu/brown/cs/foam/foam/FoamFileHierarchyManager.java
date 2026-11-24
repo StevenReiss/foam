@@ -107,6 +107,47 @@ File getDesignDirectory() throws FoamException;
  */
 File getLibDirectory() throws FoamException;
 
+
+
+/**
+ * Gets the scenarios directory path for a project.
+ * 
+ * @param projectDirectory The absolute path to the project directory
+ * @return The absolute path to the lib directory
+ * @throws FoamException if project directory is invalid or lib directory cannot be accessed
+ * @see II.B.1.e - lib directory for external software references and documentation
+ * @test Test that valid project returns correct lib directory path
+ * @test Test that invalid project directory throws appropriate exception
+ */
+File getScenariosDirectory() throws FoamException;
+
+
+/**
+ * Gets the user interface directory path for a project.
+ * 
+ * @param projectDirectory The absolute path to the project directory
+ * @return The absolute path to the lib directory
+ * @throws FoamException if project directory is invalid or lib directory cannot be accessed
+ * @see II.B.1.e - lib directory for external software references and documentation
+ * @test Test that valid project returns correct lib directory path
+ * @test Test that invalid project directory throws appropriate exception
+ */
+File getUIDirectory() throws FoamException;
+
+
+/**
+ * Gets the test cases directory path for a project.
+ * 
+ * @param projectDirectory The absolute path to the project directory
+ * @return The absolute path to the lib directory
+ * @throws FoamException if project directory is invalid or lib directory cannot be accessed
+ * @see II.B.1.e - lib directory for external software references and documentation
+ * @test Test that valid project returns correct lib directory path
+ * @test Test that invalid project directory throws appropriate exception
+ */
+File getTestsDirectory() throws FoamException;
+
+
 }       // end of interface FoamFileHierarchyManager
 
 

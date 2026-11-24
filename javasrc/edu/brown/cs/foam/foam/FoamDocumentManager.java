@@ -35,8 +35,6 @@
 
 package edu.brown.cs.foam.foam;
 
-import org.w3c.dom.Element;
-
 
 /**
  * Interface for managing specification documents within FOAM projects.
@@ -52,7 +50,6 @@ public interface FoamDocumentManager extends FoamConstants
 /**
  * Creates a new specification document with specified format.
  * 
- * @param projectDirectory The absolute path to the project directory
  * @param fileName The name of the file to create
  * @param documentType The type of document to create
  * @throws FoamException if document creation fails due to invalid parameters or file system issues
@@ -61,8 +58,7 @@ public interface FoamDocumentManager extends FoamConstants
  * @test Test that invalid parameters throw appropriate exceptions
  * @test Test that document is created with proper file extension based on type
  */
-void createDocument(String projectDirectory, String fileName, 
-      FoamDocumentType documentType) 
+void createDocument(String fileName,FoamDocumentType documentType) 
    throws FoamException;
 
 /**
@@ -77,7 +73,7 @@ void createDocument(String projectDirectory, String fileName,
  * @test Test that invalid document throws appropriate exception
  * @test Test that markdown outline parsing works correctly for different formats
  */
-Element getRootElement(String projectDirectory, String fileName)
+FoamElement getRootElement(String fileName)
    throws FoamException;
 
 /**
@@ -92,7 +88,7 @@ Element getRootElement(String projectDirectory, String fileName)
  * @test Test that non-existent document throws appropriate exception
  * @test Test that relative paths are resolved correctly
  */
-String getDocumentPath(String projectDirectory, String fileName) 
+String getDocumentPath(String fileName) 
    throws FoamException;
 
 /**
@@ -107,7 +103,7 @@ String getDocumentPath(String projectDirectory, String fileName)
  * @test Test that invalid parameters throw appropriate exceptions
  * @test Test that update maintains document structure integrity
  */
-void updateDocument(String projectDirectory, String fileName, String content)
+void updateDocument(String fileName, String content)
    throws FoamException;
 
 /**
@@ -121,7 +117,7 @@ void updateDocument(String projectDirectory, String fileName, String content)
  * @test Test that invalid LLM output throws appropriate exception
  * @test Test that generated Java files have proper structure and syntax
  */
-void parseLLMOutputForDesign(String projectDirectory, String fileName) 
+void parseLLMOutputForDesign(String fileName) 
    throws FoamException;
 
 /**
@@ -135,7 +131,7 @@ void parseLLMOutputForDesign(String projectDirectory, String fileName)
  * @test Test that outline supports easy extraction of subelements
  * @test Test that outline format is consistent across different document types
  */
-void createStructuredOutline(String projectDirectory, String fileName) 
+void createStructuredOutline(String fileName) 
    throws FoamException;
 
 /**
@@ -150,7 +146,7 @@ void createStructuredOutline(String projectDirectory, String fileName)
  * @test Test that comments are properly formatted and positioned
  * @test Test that no comments are added to elements where information already exists
  */
-void addCommentsFromLLM(String projectDirectory, String fileName) 
+void addCommentsFromLLM(String fileName) 
    throws FoamException;
 
 

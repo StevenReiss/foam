@@ -48,16 +48,6 @@ interface FoamCommand {
 }
 
 
-String [] PROJECT_DIRS = {
-      "metadata",
-      "resources",
-      "specification",
-      "design",
-      "design/main",
-      "design/test",
-      "scenarios",
-      "lib",
-};
 
 String [] GIT_IGNORES = {
       "*.class",

@@ -24,6 +24,7 @@ package edu.brown.cs.foam.fide;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.w3c.dom.Element;
 
@@ -89,7 +90,6 @@ FoamCommand createCommand(Element xml)
    switch (fct) {
       case AGENT :
       case CLEAR :
-      case COMMIT :
       case DIFFS :
       case EDIT :
       case EDITED :
@@ -99,10 +99,13 @@ FoamCommand createCommand(Element xml)
       case STATUS :
       case SYNC :
       case UPDATE :
-        break;
+         break;
       default :
          IvyLog.logE("FIDE","Illegal command " + cmd);
          return null;
+      case COMMIT :
+         rslt = new CommandCommit(xml);
+         break;
       case CREATE :
          rslt = new CommandCreate(xml);
          break;
@@ -120,6 +123,9 @@ FoamCommand createCommand(Element xml)
          break;
       case SHELL :
          rslt = new CommandShell(xml);
+         break;
+      case VERSIONS :
+         rslt = new CommandVersions(xml);
          break;
     }
    
@@ -308,18 +314,74 @@ private class CommandSetVersion extends CommandBase {
          throw new FoamException("No version name specified");
        }
       FoamVersionManager vm = foam_main.getVersionManager();
-      if (version_name.equals("NEXT")) {
-         vm.redo();
-       }
-      else if (version_name.equals("PREVIOUS")) {
-         vm.undo();
-       }
-      else {
-         vm.setVersion(version_name);
+      
+      switch (version_name) {
+         case "UNDO" :
+         case "PREVIOUS" :
+         case "-" :
+            vm.undo();
+            break;
+         case "REDO" :
+         case "NEXT" :
+         case "+" :
+            vm.redo();
+            break;
+         default :
+            vm.setVersion(version_name);
+            break;
        }
     }
    
 }       // end of inner class CommandSetVersion
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Command COMMIT                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandCommit extends CommandBase {
+
+   private String tag_name;
+   
+   CommandCommit(Element xml) {
+      super(xml);
+      tag_name = IvyXml.getAttrString(xml,"VERSION");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamVersionManager vm = foam_main.getVersionManager();
+      vm.commit(tag_name);
+    }
+   
+}       // end of inner class CommandCommit
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Command VERSIONS to list version info                                   */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandVersions extends CommandBase {
+
+   CommandVersions(Element xml) {
+      super(xml);
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamVersionManager vm = foam_main.getVersionManager();
+      List<String> vers = vm.getAvailableVersions();
+      for (String s :vers) {
+         xw.xmlText(s);
+       }
+    }
+   
+}       // end of inner class CommandVersions
+
 
 
 

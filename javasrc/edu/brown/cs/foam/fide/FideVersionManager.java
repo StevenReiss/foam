@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -39,6 +39,7 @@ import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamVersionManager;
 import edu.brown.cs.ivy.exec.IvyExec;
 import edu.brown.cs.ivy.file.IvyLog;
+import edu.brown.cs.ivy.xml.IvyXmlWriter;
 
 class FideVersionManager implements FoamVersionManager, FideConstants
 {
@@ -270,9 +271,17 @@ private void findVersions()
 
 @Override public String commit(String tag0) throws FoamException
 {
+   String oldtag = current_version.getTag();
    String chngs = getChanges();
-   if (chngs == null || chngs.isEmpty()) {
+   if (chngs == null || chngs.isBlank()) {
       // nothing changed
+      if (tag0 != null && !tag0.isBlank()) {
+         GitCommand cmd4 = new GitCommand("tag -a " + tag0 + " -m 'Rename " + oldtag + "'"); 
+         if (cmd4.getStatus() != 0) {
+            throw new FoamException("Git tag failed");
+          }
+         current_version.setTag(tag0);
+       }
       return current_version.getTag();
     }
    try (BufferedReader br = new BufferedReader(new StringReader(chngs))) {
@@ -301,14 +310,14 @@ private void findVersions()
     }
    
    String tag = tag0;
-   String oldtag = current_version.getTag();
-   if (tag == null) {
+   if (tag == null || tag0.isBlank()) {
       tag = computeNextVersion(oldtag);
     }
    GitCommand cmd3 = new GitCommand("tag -a " + tag + " -m 'Version after " + oldtag + "'"); 
    if (cmd3.getStatus() != 0) {
       throw new FoamException("Git tag failed");
     }
+   current_version.setTag(tag);
       
    return null;
 }
@@ -366,30 +375,54 @@ private String computeNextVersion(String prev)
 
 @Override public String undo() throws FoamException
 {
-   // do a commit to save any changes
-   // get current_version.lastVersion -- if null throw exception
-   // return setVersion of that
-   return null;
+   if (current_version == null) throw new FoamException("No current version");
+ 
+   commit(null);
+   VersionInfo nextv = current_version.getPriorVersion();
+   if (nextv == null) throw new FoamException("No prior version");
+   
+   String next = nextv.getTag();
+   return setVersion(next);
 }
 
 
 @Override public String redo() throws FoamException
 {
-   // get curernt_version.nextVersion -- if null throw exception
-   // stash any changes ???
-   // set version next version
-   return null;
+   if (current_version == null) throw new FoamException("No current version");
+  
+   String chngs = getChanges();
+   if (chngs != null && !chngs.isBlank()) {
+      // might want to stash changes if there are any
+    }
+   
+   VersionInfo nextv = current_version.getNextVersion();
+   if (nextv == null) throw new FoamException("No next version");
+   
+   String next = nextv.getTag();
+   return setVersion(next);
 }
 
 
 @Override public List<String> getAvailableVersions()
 {
-   // if changes -- label current version as HOME? else ignore
-   // go forward from current version + go backward from current version
-   // to build a list of VersionInfo
-   // convert to list of Strings
+   List<VersionInfo> versions = new ArrayList<>();
+   for (VersionInfo vi = current_version; vi != null; vi.getNextVersion()) {
+      versions.add(0,vi);
+    }
+   if (current_version != null) {
+      for (VersionInfo vi = current_version.getPriorVersion(); vi != null; vi = vi.getPriorVersion()) {
+         versions.add(vi);
+       }
+    }
+   
+   List<String> rslt = new ArrayList<>();
+   for (VersionInfo vi : versions) {
+      IvyXmlWriter xw = new IvyXmlWriter();
+      vi.outputXml(xw,vi == current_version);
+      rslt.add(xw.toString());
+    }
 
-   return null;
+   return rslt;
 }
 
 
@@ -509,6 +542,16 @@ private static class VersionInfo {
    VersionInfo getPriorVersion()        { return prior_version; }
    VersionInfo getNextVersion()         { return next_version; }
    String getTag()                      { return tag_name; }
+   
+   void setTag(String tag)              { tag_name = tag; }
+   
+   void outputXml(IvyXmlWriter xw,boolean cur) {
+      xw.begin("VERSION");
+      xw.field("HASH",long_hash);
+      xw.field("NAME",tag_name);
+      if (cur) xw.field("CURRENT",true);
+      xw.end("VERSION");
+    }
     
 }       // end of inner class VersionInfo
 

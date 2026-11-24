@@ -33,9 +33,10 @@ import java.util.Random;
 
 import org.w3c.dom.Element;
 
+import edu.brown.cs.foam.felt.FeltManager;
+import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
-import edu.brown.cs.foam.foam.FoamProjectManager;
 import edu.brown.cs.ivy.file.IvyIncludeReader;
 import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.ivy.xml.IvyXml;
@@ -78,6 +79,7 @@ private FideMonitor     msg_server;
 private FideProjectManager project_manager;
 private FideVersionManager version_manager;
 private FideCommandFactory command_factory;
+private FeltManager     document_manager;
 
 
 private static Random   random_gen = new Random();
@@ -152,6 +154,11 @@ FideProjectManager getOurProjectManager()
    return project_manager;
 }
 
+public FoamDocumentManager getDocumentManager()
+{
+   return document_manager;
+}
+
 
 public String getProperty(String id,String dflt)
 {
@@ -165,6 +172,7 @@ public String getProperty(String id,String dflt)
 void noteProjectSet()
 {
    version_manager.setProject();
+   document_manager.setProject();
 }
 
 
@@ -262,6 +270,7 @@ private void process()
    
    project_manager = new FideProjectManager(this);
    version_manager = new FideVersionManager(this);
+   document_manager = new FeltManager(this);
    command_factory = new FideCommandFactory(this);
    
    if (mint_id != null) {

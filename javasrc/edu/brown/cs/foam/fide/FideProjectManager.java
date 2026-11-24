@@ -189,7 +189,7 @@ private void setupDirectory(String name,File dirf,boolean init)
       throw new FoamException("Can't create project directory " + dirf);
     }
 
-   for (String s : PROJECT_DIRS) {
+   for (String s : FOAM_PROJECT_DIRS) {
       File f1 = dirf;
       for (String f : s.split("/")) {
          File f2 = new File(f1,f);
@@ -294,13 +294,36 @@ private boolean isProjectDirectory(File dirf)
 
 @Override public File getDesignDirectory() throws FoamException
 {
-   return getDirectory("design");
+   File f1 = getDirectory("design");
+   return new File(f1,"main");
 }
+
+
+@Override public File getTestsDirectory() throws FoamException
+{
+   File f1 = getDirectory("design");
+   return new File(f1,"test");
+}
+
+
 
 @Override public File getLibDirectory() throws FoamException
 {
    return getDirectory("lib");
 }
+
+
+@Override public File getScenariosDirectory() throws FoamException
+{
+   return getDirectory("scenarios");
+}
+
+
+@Override public File getUIDirectory() throws FoamException
+{
+   return getDirectory("userinterfaces");
+}
+
 
 
 private File getDirectory(String which) throws FoamException
