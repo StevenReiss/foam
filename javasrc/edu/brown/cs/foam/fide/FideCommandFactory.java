@@ -28,6 +28,8 @@ import java.util.List;
 
 import org.w3c.dom.Element;
 
+import edu.brown.cs.foam.foam.FoamDocumentManager;
+import edu.brown.cs.foam.foam.FoamElement;
 import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamVersionManager;
 import edu.brown.cs.ivy.exec.IvyExec;
@@ -85,17 +87,15 @@ FoamCommand createCommand(Element xml)
       return null;
     }
    
-   
    FoamCommand rslt = null;
    switch (fct) {
       case AGENT :
       case CLEAR :
       case DIFFS :
       case EDIT :
-      case EDITED :
       case FIND :
-      case HIERARCHY :
       case QUERY :
+      case SETMODEL :
       case STATUS :
       case SYNC :
       case UPDATE :
@@ -109,8 +109,14 @@ FoamCommand createCommand(Element xml)
       case CREATE :
          rslt = new CommandCreate(xml);
          break;
+      case EDITED :
+         rslt = new CommandEdited(xml);
+         break;
       case EXIT :
          System.exit(0);
+         break;
+      case HIERARCHY :
+         rslt = new CommandHierarchy(xml);
          break;
       case PING :
          rslt = new CommandPing(xml);
@@ -290,7 +296,73 @@ private class CommandCreate extends CommandBase {
       foam_main.getProjectManager().createProject(project_name,project_dir);
     }
 
-}       // end of inner class CommandProject
+}       // end of inner class CommandCreate
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      CREATE command                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandEdited extends CommandBase {
+   
+   private String file_name;
+   
+   CommandEdited(Element xml) {
+      super(xml);
+      file_name = IvyXml.getAttrString(xml,"NAME");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      String cnts = null;
+      String fnm = foam_main.getDocumentManager().getDocumentPath(file_name);
+      try {
+         cnts = IvyFile.loadFile(new File(fnm));
+       }
+      catch (IOException e) {
+         throw new FoamException("Can't access contents of " + fnm);
+       }
+      foam_main.getDocumentManager().updateDocument(file_name,cnts);
+    }
+
+}       // end of inner class CommandEdited
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      CREATE command                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandHierarchy extends CommandBase {
+   
+   private String file_name;
+   private FoamElementType element_type;
+   
+   CommandHierarchy(Element xml) {
+      super(xml);
+      file_name = IvyXml.getAttrString(xml,"NAME");
+      element_type = null;
+      if (IvyXml.getAttrPresent(xml,"TYPE")) {
+         element_type = IvyXml.getAttrEnum(xml,"TYPE",FoamElementType.DOCUMENT);
+       }
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamDocumentManager docmgr = foam_main.getDocumentManager();
+      List<FoamElement> elts = docmgr.identifyElements(file_name,
+            element_type);
+      for (FoamElement fe : elts) {
+         fe.outputXml(xw);
+       }
+    }
+   
+}       // end of inner class CommandHierarchy
+
 
 
 

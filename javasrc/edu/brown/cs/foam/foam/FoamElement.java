@@ -37,6 +37,8 @@ package edu.brown.cs.foam.foam;
 
 import java.util.List;
 
+import edu.brown.cs.ivy.xml.IvyXmlWriter;
+
 
 /**
  * Interface representing an element in a FOAM document.
@@ -138,6 +140,19 @@ List<FoamElement> getChildren();
  * @test Test that setting children preserves element integrity
  */
 void setChildren(List<FoamElement> children);
+
+
+/**
+ * Returns the full path name of this element
+ */
+String getFullName();
+
+
+/**
+ * Output the element in XML
+ **/
+void outputXml(IvyXmlWriter xw);
+
 
 }       // end of interface FoamElement
 

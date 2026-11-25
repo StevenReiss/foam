@@ -22,11 +22,13 @@
 
 package edu.brown.cs.foam.felt;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import edu.brown.cs.foam.foam.FoamElement;
+import edu.brown.cs.ivy.xml.IvyXmlWriter;
 
 class FeltElement implements FoamElement, FeltConstants
 {
@@ -42,10 +44,9 @@ private String          element_name;
 private FoamElementType element_type;
 private String          element_content;
 private FeltElement     element_parent;
+private File            element_file;
 private List<FeltElement> element_children;
-@SuppressWarnings("unused")
 private int             start_line;
-@SuppressWarnings("unused")
 private int             end_line;
 
 
@@ -159,6 +160,60 @@ void setEndLine(int end)
    end_line = end;
 }
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Compute full name                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String getFullName()
+{
+   if (element_parent == null) return getName();
+   else return element_parent.getFullName() + "." + getName();
+}
+
+
+String getFile()
+{
+   if (element_file != null) return element_file.getAbsolutePath();
+   if (element_parent != null) return element_parent.getFile();
+   return null;
+}
+
+void setFile(File file)
+{
+   element_file = file;
+}
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private String getId()
+{
+   return "E_" + Math.abs(hashCode());
+}
+
+
+@Override public void outputXml(IvyXmlWriter xw)
+{
+   xw.begin("ELEMENT");
+   xw.field("ID",getId());
+   xw.field("NAME",element_name);
+   xw.field("TYPE",element_type);
+   if (element_parent != null) {
+      xw.field("PARENTNAME",element_parent.getName());
+      xw.field("PARENTID",element_parent.getId());
+    }
+   xw.field("FULLNAME",getFullName());
+   xw.field("STARTLINE",start_line);
+   xw.field("ENDLINE",end_line);
+   xw.field("FILE",getFile());
+   xw.end("ELEMENT");
+}
 
 
 }       // end of class FeltElement

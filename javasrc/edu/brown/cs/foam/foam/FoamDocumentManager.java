@@ -35,6 +35,7 @@
 
 package edu.brown.cs.foam.foam;
 
+import java.util.List;
 
 /**
  * Interface for managing specification documents within FOAM projects.
@@ -77,6 +78,23 @@ FoamElement getRootElement(String fileName)
    throws FoamException;
 
 /**
+ * Identifies elements within a document.
+ * 
+ * @param projectDirectory The absolute path to the project directory
+ * @param fileName The name of the file to process
+ * @param elementType The type of element to identify
+ * @return A list of identified elements
+ * @throws FoamException if element identification fails
+ * @see II.E.2 - System shall identify ELEMENTs of components
+ * @test Test that correct elements are identified for different document types
+ * @test Test that element identification works for both design and outline specifications
+ * @test Test that invalid parameters throw appropriate exceptions
+ */
+List<FoamElement> identifyElements(String fileName,FoamElementType elementType) 
+            throws FoamException;
+
+
+/**
  * Gets the absolute path to a document.
  * 
  * @param projectDirectory The absolute path to the project directory
@@ -117,8 +135,8 @@ void updateDocument(String fileName, String content)
  * @test Test that invalid LLM output throws appropriate exception
  * @test Test that generated Java files have proper structure and syntax
  */
-void parseLLMOutputForDesign(String fileName) 
-   throws FoamException;
+// void parseLLMOutputForDesign(String fileName) 
+// throws FoamException;
 
 /**
  * Creates structured outline files that can easily extract subelements.
@@ -131,8 +149,8 @@ void parseLLMOutputForDesign(String fileName)
  * @test Test that outline supports easy extraction of subelements
  * @test Test that outline format is consistent across different document types
  */
-void createStructuredOutline(String fileName) 
-   throws FoamException;
+// void createStructuredOutline(String fileName) 
+// throws FoamException;
 
 /**
  * Adds missing information as comments to relevant elements when LLM provides additional details.

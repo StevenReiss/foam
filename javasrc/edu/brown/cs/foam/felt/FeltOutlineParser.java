@@ -85,8 +85,12 @@ FeltElement parse()
    Deque<FeltElement> stack = new ArrayDeque<>();
    Map<FeltElement,Integer> levels = new HashMap<>();
    
-   FeltElement root = new FeltElement("ROOT",
+   String enm = for_file.getFileName().toString();
+   int idx = enm.indexOf(".");
+   if (idx > 0) enm = enm.substring(0,idx);   
+   FeltElement root = new FeltElement(enm,
          FoamElementType.DOCUMENT,null);
+   root.setFile(for_file.toFile());
    levels.put(root,0);
    stack.push(root);
    FeltElement current = null;

@@ -35,7 +35,6 @@
 
 package edu.brown.cs.foam.foam;
 
-import java.util.List;
 
 
 /**
@@ -63,53 +62,7 @@ public interface FoamLLMManager extends FoamConstants
  */
 String sendQuery(String query) throws FoamException;
 
-/**
- * Identifies elements within a document.
- * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file to process
- * @param elementType The type of element to identify
- * @return A list of identified elements
- * @throws FoamException if element identification fails
- * @see II.E.2 - System shall identify ELEMENTs of components
- * @test Test that correct elements are identified for different document types
- * @test Test that element identification works for both design and outline specifications
- * @test Test that invalid parameters throw appropriate exceptions
- */
-List<FoamElement> identifyElements(String projectDirectory, String fileName, 
-      FoamElementType elementType) 
-         throws FoamException;
 
-/**
- * Assigns unique names to elements.
- * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file containing the element
- * @param elementName The base name for the element
- * @return The unique name assigned to the element
- * @throws FoamException if element naming fails
- * @see II.E.3 - System shall assign unique names to ELEMENTs composed of filename without extension, period, 
- *      and section/method/field name
- * @test Test that unique names are generated correctly following specified format
- * @test Test that duplicate names are handled appropriately
- * @test Test that naming works for different file types and element types
- */
-String assignUniqueName(String projectDirectory, String fileName, String elementName) 
-   throws FoamException;
-
-/**
- * Creates or modifies project hierarchy files based on parsed results.
- * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file containing LLM output
- * @throws FoamException if project hierarchy modification fails
- * @see II.F.4 - System shall create or modify project hierarchy files based on parsed results
- * @test Test that project hierarchy is correctly updated with new elements
- * @test Test that existing hierarchy is preserved during modifications
- * @test Test that different types of requests (design, requirements, UI) are handled appropriately
- */
-void updateProjectHierarchy(String projectDirectory, String fileName)
-   throws FoamException;
 
 }       // end of interface FoamLimbaManager
 

@@ -25,8 +25,12 @@ package edu.brown.cs.foam.felt;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import edu.brown.cs.foam.fide.FideSystem;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
@@ -182,8 +186,11 @@ private void loadProject()
       case LIBRARY :
       case RESOURCE :
       case UI_IMAGE :
-         root = new FeltElement(di.getFile().getName(),
-               FoamElementType.DOCUMENT,null);
+         String enm = di.getFile().getName();
+         int idx = enm.indexOf(".");
+         if (idx > 0) enm = enm.substring(0,idx);
+         root = new FeltElement(enm,FoamElementType.DOCUMENT,null);
+         root.setFile(new File(fnm));
          break;
       case DESCRIPTION :
       case FEATURES :
@@ -196,33 +203,19 @@ private void loadProject()
          FeltJavaParser javapar = new FeltJavaParser(di.getFile());
          root = javapar.parse();  // outline document
          break;
+      default :
+         throw new FoamException("Can't find root element for document type");
     }
    di.setRootElement(root);
    
    return root;
 }
 
-
-@Override public void parseLLMOutputForDesign(String file)
-   throws FoamException
-{
-   getRootElement(file);
-}
-
-
 @Override public void addCommentsFromLLM(String file)
    throws FoamException
 {
    throw new FoamException("Not implement yet");
 }
-
-
-@Override public void createStructuredOutline(String file)
-   throws FoamException
-{
-   getRootElement(file);
-}
-
 
 
 /********************************************************************************/
@@ -298,6 +291,7 @@ private void loadProject()
 }
 
 
+
 /********************************************************************************/
 /*                                                                              */
 /*      Update a document                                                       */
@@ -346,15 +340,17 @@ private void loadProject()
    File f1 = new File(file);
    if (!f1.isAbsolute()) {
       File f2 = new File(project_manager.getCurrentProjectDirectory());
-      File f3 = new File(f2,file);
-      if (f3.exists()) f1 = f3;
+      File f3 = checkFile(f2,file);
+      if (f3 != null) {
+         f1 = f3;
+       }
       else {
          String nm = f1.getName();
          for (String s : FOAM_PROJECT_DIRS) {
             String s1 = s.replace("/",File.separator);
             File f4 = new File(f2,s1);
-            File f5 = new File(f4,nm);
-            if (f5.exists()) {
+            File f5 = checkFile(f4,nm);
+            if (f5 != null) {
                f1 = f5;
                break;
              }
@@ -371,11 +367,90 @@ private void loadProject()
 }
 
 
+private File checkFile(File dir,String name)
+{
+   File f1 = new File(dir,name);
+   if (f1.exists()) return f1;
+   
+   // try ignoring the extension
+   if (dir.exists() && dir.isDirectory()) {
+      String nm = f1.getName();
+      int idx = nm.indexOf(".");
+      if (idx > 0) {
+         // just get the main part of the name -- rest might be element id
+         nm = nm.substring(0,idx);
+       }
+      String check = nm + ".";
+      for (File f : dir.listFiles()) {
+         if (f.getName().startsWith(check)) return f;
+       }
+    }
+   
+   return null;
+}
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Element methods                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public List<FoamElement> identifyElements(String file,FoamElementType typ)
+         throws FoamException
+{
+   FoamElement root = null;
+   if (file != null && !file.isBlank()) {
+      root = getRootElement(file);
+      String [] hier = file.split("\\.");
+      for (int i = 1; i < hier.length; ++i) {
+         String enm = hier[i].trim();
+         boolean fnd = false;
+         for (FoamElement ce : root.getChildren()) {
+            if (ce.getName().equals(enm)) {
+               root = ce;
+               fnd = true;
+               break;
+             }
+          }
+         if (!fnd) break;
+       }
+    }
+   
+   List<FoamElement> rslt = new ArrayList<>();
+   getAllElements(root,typ,rslt);
+   return rslt;
+}
 
 
-
+private void getAllElements(FoamElement fe,FoamElementType typ,
+      List<FoamElement> rslt) 
+{
+   if (fe == null) {
+      Set<DocumentInfo> alldocs = new TreeSet<>();
+      alldocs.addAll(document_map.values());
+      for (DocumentInfo di : alldocs) {
+         try {
+            String fnm = di.getFile().getAbsolutePath();
+            FoamElement root = getRootElement(fnm);
+            getAllElements(root,typ,rslt);
+          }
+         catch (FoamException e) {
+            IvyLog.logE("FELT","Problem getting document root");
+          }
+       }
+      return;
+    }
+   
+   if (typ == null || typ == fe.getType()) {
+      if (fe.getParent() != null) rslt.add(fe);
+      else if (!fe.getChildren().isEmpty()) rslt.add(fe);
+      else if (typ == FoamElementType.DOCUMENT) rslt.add(fe);
+    }
+   for (FoamElement ce : fe.getChildren()) {
+      getAllElements(ce,typ,rslt);
+    }
+}
 
 
 

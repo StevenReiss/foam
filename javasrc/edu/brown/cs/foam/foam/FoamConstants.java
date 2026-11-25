@@ -79,6 +79,7 @@ enum FoamCommandType {
    CLEAR,
    SHELL,
    VERSIONS,
+   SETMODEL,
 }
 
 enum FoamLinkType {

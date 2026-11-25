@@ -84,9 +84,14 @@ FeltElement parse()
       return null;
     }
    
+   String enm = for_file.getName();
+   int idx = enm.indexOf(".");
+   if (idx > 0) enm = enm.substring(0,idx);
+   
    ASTNode ast = JcompAst.parseSourceFile(cnts);
-   FeltElement root = new FeltElement("ROOT",
+   FeltElement root = new FeltElement(enm,
          FoamElementType.DOCUMENT,null); 
+   root.setFile(for_file);
    ElementBuilder bldr = new ElementBuilder(root);
    ast.accept(bldr);
    
