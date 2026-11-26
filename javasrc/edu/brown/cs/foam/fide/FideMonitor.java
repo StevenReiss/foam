@@ -31,6 +31,7 @@ import edu.brown.cs.ivy.mint.MintControl;
 import edu.brown.cs.ivy.mint.MintDefaultReply;
 import edu.brown.cs.ivy.mint.MintHandler;
 import edu.brown.cs.ivy.mint.MintMessage;
+import edu.brown.cs.ivy.mint.MintReply;
 import edu.brown.cs.ivy.mint.MintConstants.MintSyncMode;
 import edu.brown.cs.ivy.xml.IvyXmlWriter;
 
@@ -74,6 +75,12 @@ FideMonitor(FideSystem sys,String mintid)
 /*                                                                              */
 /********************************************************************************/
 
+public void register(String pat,MintHandler hdlr) 
+{
+   mint_control.register(pat,hdlr);
+}
+
+
 boolean sendPing()
 {
    try (IvyXmlWriter xw = new IvyXmlWriter()) {
@@ -93,6 +100,11 @@ boolean sendPing()
 void send(String msg) 
 {
    mint_control.send(msg);
+}
+
+void send(String msg,MintReply rply,int fgs)
+{
+   mint_control.send(msg,rply,fgs);
 }
 
 

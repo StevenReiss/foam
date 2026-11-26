@@ -62,7 +62,16 @@ public interface FoamLLMManager extends FoamConstants
  */
 String sendQuery(String query) throws FoamException;
 
+/**
+ * Clear LLM memory
+ **/
+void clearHistory() throws FoamException;
 
+
+/**
+ * Set LLM model to use
+ **/
+void setModel(String mdl) throws FoamException;
 
 }       // end of interface FoamLimbaManager
 

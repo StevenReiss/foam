@@ -34,11 +34,17 @@ import java.util.Random;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.foam.felt.FeltManager;
+import edu.brown.cs.foam.film.FilmLLMManager;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
+import edu.brown.cs.foam.foam.FoamLLMManager;
+import edu.brown.cs.foam.foam.FoamProjectManager;
 import edu.brown.cs.ivy.file.IvyIncludeReader;
 import edu.brown.cs.ivy.file.IvyLog;
+import edu.brown.cs.ivy.mint.MintConstants;
+import edu.brown.cs.ivy.mint.MintHandler;
+import edu.brown.cs.ivy.mint.MintReply;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.ivy.xml.IvyXmlReader;
 import edu.brown.cs.ivy.xml.IvyXmlWriter;
@@ -78,6 +84,7 @@ private String          project_dir;
 private FideMonitor     msg_server;
 private FideProjectManager project_manager;
 private FideVersionManager version_manager;
+private FilmLLMManager  llm_manager;
 private FideCommandFactory command_factory;
 private FeltManager     document_manager;
 
@@ -131,7 +138,7 @@ FideSystem(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-public FideProjectManager getProjectManager()
+public FoamProjectManager getProjectManager()
 {
    return project_manager;
 }
@@ -160,6 +167,12 @@ public FoamDocumentManager getDocumentManager()
 }
 
 
+public FoamLLMManager getLLMManager()
+{
+   return llm_manager;
+}
+
+
 public String getProperty(String id,String dflt)
 {
    String p = project_manager.getProperty(id);
@@ -173,6 +186,27 @@ void noteProjectSet()
 {
    version_manager.setProject();
    document_manager.setProject();
+   if (msg_server == null) {
+      try {
+         String wsname = project_manager.getCurrentProjectDirectory();
+         if (wsname.endsWith(File.separator)) {
+            wsname = wsname.substring(0,wsname.length()-1);
+          }
+         int idx = wsname.lastIndexOf(File.separator);
+         if (idx > 0) {
+            wsname = wsname.substring(idx+1);
+          }
+         if (wsname == null) wsname = "";
+         else wsname = wsname.replace(" ","_");
+         String mintid =  "BUBBLES_" + System.getProperty("user.name").replace(" ","_");
+         mintid += "_" + wsname;
+         setupMessageServer(mintid);
+       }
+      catch (FoamException e) {
+         IvyLog.logE("FIDE","Problem setting up message server",e);
+       }
+    }
+   llm_manager.setProject();
 }
 
 
@@ -271,6 +305,7 @@ private void process()
    project_manager = new FideProjectManager(this);
    version_manager = new FideVersionManager(this);
    document_manager = new FeltManager(this);
+   llm_manager = new FilmLLMManager(this);
    command_factory = new FideCommandFactory(this);
    
    if (mint_id != null) {
@@ -314,10 +349,14 @@ private void process()
 }
 
 
-void setupMessageServer(String mintid)
+boolean setupMessageServer(String mintid)
 {
+   if (msg_server != null) return false;
+   
    mint_id = mintid;
    msg_server = new FideMonitor(this,mint_id);
+   
+   return true;
 }
 
 
@@ -412,6 +451,52 @@ String processXMLCommand(String cmd,Element xml)
       
       return xw.toString();
     }
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Messaging methods                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+public String getMintId()
+{
+   return mint_id; 
+}
+
+
+public boolean haveMessageServer()
+{
+   return msg_server !=  null;
+}
+
+
+public boolean registerMessage(String pat,MintHandler hdlr)
+{
+   if (msg_server == null) return false;
+   
+   msg_server.register(pat,hdlr);
+   return true;
+}
+
+
+public boolean sendMessage(String msg)
+{
+   if (msg_server == null) return false;
+   
+   msg_server.send(msg);
+   return true;
+}
+
+public boolean sendMessage(String msg,MintReply rply)
+{
+   if (msg_server == null) return false;
+   
+   msg_server.send(msg,rply,MintConstants.MINT_MSG_FIRST_NON_NULL);
+   
+   return true;
 }
 
 

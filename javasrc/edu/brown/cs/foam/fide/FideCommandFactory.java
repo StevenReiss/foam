@@ -31,6 +31,7 @@ import org.w3c.dom.Element;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamElement;
 import edu.brown.cs.foam.foam.FoamException;
+import edu.brown.cs.foam.foam.FoamLLMManager;
 import edu.brown.cs.foam.foam.FoamVersionManager;
 import edu.brown.cs.ivy.exec.IvyExec;
 import edu.brown.cs.ivy.file.IvyFile;
@@ -90,12 +91,10 @@ FoamCommand createCommand(Element xml)
    FoamCommand rslt = null;
    switch (fct) {
       case AGENT :
-      case CLEAR :
       case DIFFS :
       case EDIT :
       case FIND :
       case QUERY :
-      case SETMODEL :
       case STATUS :
       case SYNC :
       case UPDATE :
@@ -103,6 +102,9 @@ FoamCommand createCommand(Element xml)
       default :
          IvyLog.logE("FIDE","Illegal command " + cmd);
          return null;
+      case CLEAR :
+         rslt = new CommandClear(xml);
+         break;
       case COMMIT :
          rslt = new CommandCommit(xml);
          break;
@@ -123,6 +125,9 @@ FoamCommand createCommand(Element xml)
          break;
       case PROJECT :
          rslt = new CommandProject(xml);
+         break;
+      case SETMODEL :
+         rslt = new CommandSetModel(xml);
          break;
       case SETVERSION :
          rslt = new CommandSetVersion(xml);
@@ -454,6 +459,49 @@ private class CommandVersions extends CommandBase {
    
 }       // end of inner class CommandVersions
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      CLEAR history command                                                   */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandClear extends CommandBase {
+   
+   CommandClear(Element xml) {
+      super(xml);
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamLLMManager lm = foam_main.getLLMManager();
+      lm.clearHistory();
+    }
+
+}       // end of inner class CommandClear
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      SETMODEL command to set LLM model                                       */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandSetModel extends CommandBase {
+   
+   private String model_name; 
+   
+   CommandSetModel(Element xml) {
+      super(xml);
+      model_name = IvyXml.getAttrString(xml,"MODEL");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamLLMManager lm = foam_main.getLLMManager();
+      lm.setModel(model_name);
+    }
+
+}       // end of inner class CommandSetModel
 
 
 
