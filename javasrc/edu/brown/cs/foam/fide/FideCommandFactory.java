@@ -323,9 +323,9 @@ private class CommandEdited extends CommandBase {
    
    @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
       String cnts = null;
-      String fnm = foam_main.getDocumentManager().getDocumentPath(file_name);
+      File fnm = foam_main.getDocumentManager().getDocumentPath(file_name);
       try {
-         cnts = IvyFile.loadFile(new File(fnm));
+         cnts = IvyFile.loadFile(fnm);
        }
       catch (IOException e) {
          throw new FoamException("Can't access contents of " + fnm);

@@ -25,6 +25,7 @@ package edu.brown.cs.foam.film;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,7 +131,7 @@ public void setProject()
 
 /********************************************************************************/
 /*                                                                              */
-/*      Abstract Method Implementations                                         */
+/*      Handle queries                                                          */
 /*                                                                              */
 /********************************************************************************/
 
@@ -139,6 +140,50 @@ public void setProject()
    // method body goes here
 
    return null;
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Get prompt from resource file                                           */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String getPrompt(String cmd)
+{
+   InputStream ins = getClass().getClassLoader().getResourceAsStream("resources/prompts.xml");
+   if (ins == null) {
+      ins = getClass().getClassLoader().getResourceAsStream("prompts.xml");
+    }
+   if (ins == null) return null;
+   Element xml = IvyXml.loadXmlFromStream(ins);
+   if (xml == null) return null;
+   String base = null;
+   String ptxt = null;
+   boolean useboth = true;
+   for (Element pmpt : IvyXml.children(xml,"PROMPT")) {
+      String what = IvyXml.getAttrString(pmpt,"COMMAND");
+      if (what == null) base = IvyXml.getText(pmpt);
+      else {
+         StringTokenizer tok = new StringTokenizer(what,",; ");
+         while (tok.hasMoreTokens()) {
+            String w = tok.nextToken();
+            if (cmd.equals(w)) {
+               ptxt = IvyXml.getText(pmpt);
+               if (IvyXml.getAttrBool(pmpt,"COMPLETE")) {
+                  useboth = false;
+                }
+             }
+          }
+       }
+    }
+   
+   if (base == null) return ptxt;
+   if (ptxt == null) return base;
+   if (!useboth) return ptxt;
+   
+   return base + " " + ptxt;
 }
 
 

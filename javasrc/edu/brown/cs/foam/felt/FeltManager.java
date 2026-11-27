@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ private FideSystem      foam_main;
 private FoamProjectManager project_manager;
 private FoamFileHierarchyManager file_manager;
 
-private Map<String,DocumentInfo>  document_map;
+private Map<File,DocumentInfo>  document_map;
 
 
 
@@ -99,7 +100,7 @@ private void loadProject()
          for (File fx : f1.listFiles()) {
             if (fx.getName().startsWith(".")) continue;
             DocumentInfo di = new DocumentInfo(fx,FoamDocumentType.RESOURCE);
-            document_map.put(fx.getAbsolutePath(),di);
+            document_map.put(fx,di);
           }
        }
       File f2 = file_manager.getSpecificationDirectory();
@@ -118,7 +119,7 @@ private void loadProject()
             else if (nm.startsWith("IMAGE")) fdt = FoamDocumentType.UI_IMAGE;
             if (fdt != null) {
                DocumentInfo di = new DocumentInfo(fx,fdt);
-               document_map.put(fx.getAbsolutePath(),di);
+               document_map.put(fx,di);
              }
           }
        }
@@ -127,27 +128,18 @@ private void loadProject()
          for (File fx : f3.listFiles()) {
             if (fx.getName().startsWith(".")) continue;
             DocumentInfo di = new DocumentInfo(fx,FoamDocumentType.LIBRARY);
-            document_map.put(fx.getAbsolutePath(),di);
+            document_map.put(fx,di);
           }
        }
-      File f4 = file_manager.getDesignDirectory();
-      File f5 = new File(f4,"main");
+      File f5 = file_manager.getDesignDirectory();
       if (f5.exists() && f5.isDirectory()) {
-         for (File fx : f5.listFiles()) {
-            if (fx.getName().endsWith(".java")) {
-               DocumentInfo di = new DocumentInfo(fx,FoamDocumentType.DESIGN);
-               document_map.put(fx.getAbsolutePath(),di);
-             }
-          }
+         DocumentInfo di = new DocumentInfo(f5,FoamDocumentType.DESIGN);
+         document_map.put(f5,di);
        }
-      File f6 = new File(f4,"test");
+      File f6 = file_manager.getTestsDirectory();
       if (f6.exists() && f6.isDirectory()) {
-         for (File fx : f6.listFiles()) {
-            if (fx.getName().endsWith(".java")) {
-               DocumentInfo di = new DocumentInfo(fx,FoamDocumentType.TEST_CASE);
-               document_map.put(fx.getAbsolutePath(),di);
-             }
-          }
+         DocumentInfo di = new DocumentInfo(f6,FoamDocumentType.TEST_CASE);
+         document_map.put(f6,di);
        }
     }
    catch (FoamException e) {
@@ -166,8 +158,8 @@ private void loadProject()
 
 @Override public FoamElement getRootElement(String filename) throws FoamException
 {
-   String fnm = getDocumentPath(filename);
-   DocumentInfo di = document_map.get(fnm);
+   File file = getDocumentPath(filename);
+   DocumentInfo di = document_map.get(file);
    if (di == null) {
       throw new FoamException("File " + filename + " not found");
     }
@@ -190,7 +182,7 @@ private void loadProject()
          int idx = enm.indexOf(".");
          if (idx > 0) enm = enm.substring(0,idx);
          root = new FeltElement(enm,FoamElementType.DOCUMENT,null);
-         root.setFile(new File(fnm));
+         root.setFile(file);
          break;
       case DESCRIPTION :
       case FEATURES :
@@ -200,8 +192,18 @@ private void loadProject()
          break;
       case TEST_CASE :
       case DESIGN :
-         FeltJavaParser javapar = new FeltJavaParser(di.getFile());
-         root = javapar.parse();  // outline document
+         File dir = di.getFile();
+         if (dir.exists() && dir.isDirectory()) {
+            root = new FeltElement(dir.getName(),
+                  FoamElementType.DOCUMENT,null);
+            root.setFile(dir);
+            for (File f : dir.listFiles()) {
+               if (f.getName().endsWith(".java")) {
+                  FeltJavaParser javapar = new FeltJavaParser(f);
+                  javapar.parse(root);
+                }
+             }
+          }
          break;
       default :
          throw new FoamException("Can't find root element for document type");
@@ -286,8 +288,7 @@ private void loadProject()
       throw new FoamException("Can't create file",e);
     }
    
-   String nm0 = getDocumentPath(f1.getAbsolutePath());
-   document_map.put(nm0,new DocumentInfo(f1,typ));
+   document_map.put(f1,new DocumentInfo(f1,typ));
 }
 
 
@@ -304,7 +305,7 @@ private void loadProject()
    if (file == null) {
       throw new FoamException("File must be specified on updateDocument");
     }
-   String fnm = getDocumentPath(file);
+   File fnm = getDocumentPath(file);
    DocumentInfo di = document_map.get(fnm);
    if (di == null) {
       throw new FoamException("File is not known to the system");
@@ -334,7 +335,7 @@ private void loadProject()
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String getDocumentPath(String file) throws FoamException
+@Override public File getDocumentPath(String file) throws FoamException
 {
    file = file.replace("/",File.separator);
    File f1 = new File(file);
@@ -363,7 +364,7 @@ private void loadProject()
    
    f1 = IvyFile.getCanonical(f1);
    
-   return f1.getAbsolutePath();
+   return f1;
 }
 
 
@@ -388,6 +389,32 @@ private File checkFile(File dir,String name)
    
    return null;
 }
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Get document information                                                */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public FoamDocumentType getDocumentType(String filename)
+   throws FoamException
+{
+   File file = getDocumentPath(filename);
+   DocumentInfo di = document_map.get(file);
+   if (di == null) {
+      throw new FoamException("File " + filename + " not found");
+    }
+   
+   return di.getType();
+}
+
+
+@Override public Collection<File> getAllDocuments()
+{
+   return document_map.keySet();
+}
+
 
 
 /********************************************************************************/

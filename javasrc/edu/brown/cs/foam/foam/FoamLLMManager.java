@@ -73,6 +73,12 @@ void clearHistory() throws FoamException;
  **/
 void setModel(String mdl) throws FoamException;
 
+
+/**
+ * Get prompt
+ **/
+String getPrompt(String cmd) throws FoamException;
+
 }       // end of interface FoamLimbaManager
 
 

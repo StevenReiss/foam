@@ -294,15 +294,13 @@ private boolean isProjectDirectory(File dirf)
 
 @Override public File getDesignDirectory() throws FoamException
 {
-   File f1 = getDirectory("design");
-   return new File(f1,"main");
+   return getDirectory("design");
 }
 
 
 @Override public File getTestsDirectory() throws FoamException
 {
-   File f1 = getDirectory("design");
-   return new File(f1,"test");
+   return getDirectory("tests");
 }
 
 

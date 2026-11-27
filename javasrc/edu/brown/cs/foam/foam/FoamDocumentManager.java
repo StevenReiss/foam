@@ -35,6 +35,8 @@
 
 package edu.brown.cs.foam.foam;
 
+import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -77,6 +79,13 @@ void createDocument(String fileName,FoamDocumentType documentType)
 FoamElement getRootElement(String fileName)
    throws FoamException;
 
+
+/**
+ * Get type of document
+ **/
+FoamDocumentType getDocumentType(String filename) throws FoamException;
+
+
 /**
  * Identifies elements within a document.
  * 
@@ -106,7 +115,7 @@ List<FoamElement> identifyElements(String fileName,FoamElementType elementType)
  * @test Test that non-existent document throws appropriate exception
  * @test Test that relative paths are resolved correctly
  */
-String getDocumentPath(String fileName) 
+File getDocumentPath(String fileName) 
    throws FoamException;
 
 /**
@@ -124,33 +133,6 @@ String getDocumentPath(String fileName)
 void updateDocument(String fileName, String content)
    throws FoamException;
 
-/**
- * Parses LLM output to create Java source files for design specifications.
- * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file containing LLM output
- * @throws FoamException if parsing fails or Java file creation fails
- * @see II.F.1 - System shall parse LLM output to create Java source files for design specifications
- * @test Test that valid LLM output is parsed correctly into Java source files
- * @test Test that invalid LLM output throws appropriate exception
- * @test Test that generated Java files have proper structure and syntax
- */
-// void parseLLMOutputForDesign(String fileName) 
-// throws FoamException;
-
-/**
- * Creates structured outline files that can easily extract subelements.
- * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file to process
- * @throws FoamException if outline creation fails
- * @see II.F.2 - System shall create structured outline files that can easily extract subelements
- * @test Test that structured outline is created with proper hierarchy
- * @test Test that outline supports easy extraction of subelements
- * @test Test that outline format is consistent across different document types
- */
-// void createStructuredOutline(String fileName) 
-// throws FoamException;
 
 /**
  * Adds missing information as comments to relevant elements when LLM provides additional details.
@@ -167,6 +149,8 @@ void updateDocument(String fileName, String content)
 void addCommentsFromLLM(String fileName) 
    throws FoamException;
 
+
+Collection<File> getAllDocuments();
 
 }       // end of interface FoamDocumentManager
 

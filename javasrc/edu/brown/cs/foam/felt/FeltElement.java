@@ -50,8 +50,6 @@ private int             start_line;
 private int             end_line;
 
 
-
-
 /********************************************************************************/
 /*                                                                              */
 /*      Constructors                                                            */
@@ -65,6 +63,7 @@ FeltElement(String name,FoamElementType type,FeltElement parent)
    element_content = "";
    element_parent = parent;
    element_children = null;
+   element_file = null;
    start_line = 0;
    end_line = 0;
    
@@ -174,12 +173,14 @@ void setEndLine(int end)
 }
 
 
-String getFile()
+File getFile()
 {
-   if (element_file != null) return element_file.getAbsolutePath();
-   if (element_parent != null) return element_parent.getFile();
-   return null;
+   if (element_file == null && element_parent != null) {
+      element_file = element_parent.getFile();
+    }
+   return element_file;
 }
+
 
 void setFile(File file)
 {

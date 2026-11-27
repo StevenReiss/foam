@@ -73,7 +73,7 @@ FeltJavaParser(File f)
 /*                                                                              */
 /********************************************************************************/
 
-FeltElement parse()
+FeltElement parse(FeltElement root)
 {
    String cnts;
    try {
@@ -89,10 +89,9 @@ FeltElement parse()
    if (idx > 0) enm = enm.substring(0,idx);
    
    ASTNode ast = JcompAst.parseSourceFile(cnts);
-   FeltElement root = new FeltElement(enm,
-         FoamElementType.DOCUMENT,null); 
-   root.setFile(for_file);
-   ElementBuilder bldr = new ElementBuilder(root);
+   FeltElement top = new FeltElement(enm,
+         FoamElementType.DESIGN_ELEMENT,root); 
+   ElementBuilder bldr = new ElementBuilder(top);
    ast.accept(bldr);
    
    return root;

@@ -89,13 +89,21 @@ enum FoamLinkType {
 }
 
 
+enum FoamDocumentStatus {
+   UNKNOWN,
+   EDITED,
+   UPDATED,
+   OUT_OF_DATE
+}
+
+
 String [] FOAM_PROJECT_DIRS = {
       "metadata",
       "resources",
       "specification",
       "design",
-      "design/main",
-      "design/test",
+      "design",
+      "tests",
       "scenarios",
       "userinterfaces",
       "lib",

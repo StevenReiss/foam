@@ -40,6 +40,7 @@ import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
 import edu.brown.cs.foam.foam.FoamLLMManager;
 import edu.brown.cs.foam.foam.FoamProjectManager;
+import edu.brown.cs.foam.fspec.FspecManager;
 import edu.brown.cs.ivy.file.IvyIncludeReader;
 import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.ivy.mint.MintConstants;
@@ -85,6 +86,7 @@ private FideMonitor     msg_server;
 private FideProjectManager project_manager;
 private FideVersionManager version_manager;
 private FilmLLMManager  llm_manager;
+private FspecManager    spec_manager;
 private FideCommandFactory command_factory;
 private FeltManager     document_manager;
 
@@ -173,6 +175,12 @@ public FoamLLMManager getLLMManager()
 }
 
 
+public FspecManager getSpecManager()
+{
+   return spec_manager;
+}
+
+
 public String getProperty(String id,String dflt)
 {
    String p = project_manager.getProperty(id);
@@ -186,6 +194,7 @@ void noteProjectSet()
 {
    version_manager.setProject();
    document_manager.setProject();
+   spec_manager.setProject();
    if (msg_server == null) {
       try {
          String wsname = project_manager.getCurrentProjectDirectory();
@@ -306,6 +315,7 @@ private void process()
    version_manager = new FideVersionManager(this);
    document_manager = new FeltManager(this);
    llm_manager = new FilmLLMManager(this);
+   spec_manager = new FspecManager(this);
    command_factory = new FideCommandFactory(this);
    
    if (mint_id != null) {

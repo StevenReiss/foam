@@ -78,7 +78,7 @@ boolean isDocumentUpToDate(String projectDirectory, String fileName)
  * @test Test that status format is consistent and informative
  * @test Test that status reflects actual document state accurately
  */
-String getStatus(String projectDirectory, String fileName) 
+String getStatus(String fileName) 
    throws FoamException;
 
 /**
@@ -98,11 +98,12 @@ void synchronizeSpecifications(String projectDirectory, String sourceFileName,
    throws FoamException;
 
 /**
- * Maps elements from newest to out-of-date elements.
+ * Maps from one specification document type to another
  * 
  * @param projectDirectory The absolute path to the project directory
  * @param sourceFileName The name of the source file
  * @param targetFileName The name of the target file
+ * @param preserve  Attempt to preserve the old target (minimze changes)
  * @throws FoamException if mapping fails
  * @see II.M.2 - System shall provide meta command for synchronizing specifications 
  *      (mapping from newest to out-of-date elements)
@@ -110,9 +111,16 @@ void synchronizeSpecifications(String projectDirectory, String sourceFileName,
  * @test Test that mapping preserves element integrity and relationships
  * @test Test that mapping handles different document structures appropriately
  */
-void mapElements(String projectDirectory, String sourceFileName, 
-      String targetFileName) 
+void mapSpecification(FoamDocumentType sourceType, 
+      FoamDocumentType targetType,
+      boolean preserve) 
    throws FoamException;
+
+
+/**
+ * Note that a file has been edited outside the system
+ **/
+void noteEdited(String filename) throws FoamException;
 
 
 }       // end of interface FoamSyncManager
