@@ -4,6 +4,23 @@
 
 <FOAM DO='PROJECT' PROJECT='/home/spr/home/trial.spec' />
 
+<FOAM DO='SHELL' >
+   <COMMAND>cp /home/spr/nextgen/foam01.md /home/spr/home/trial.spec/specification/Description.md</COMMAND>
+</FOAM>
+
+<FOAM DO='CLEAR' />
+<FOAM DO='SETMODEL' MODEL='qwen3-coder:latest' />
+
+<FOAM DO='EDITED' FILE='Description.md' />
+<FOAM DO='SETVERSION' VERSION='INITIAL' />
+
+<FOAM DO='UPDATE' SOURCE='DESCRIPTION' TARGET='REQUIREMENTS' />
+<FOAM DO='UPDATE' SOURCE='REQUIREMENTS' TARGET='DESIGN' />
+
+<FOAM DO='SETVERSION' />
+
+<FOAM DO='HIERARCHY' />
+<FOAM DO='VERSIONS' />
 <FOAM DO='EXIT' />
 
 

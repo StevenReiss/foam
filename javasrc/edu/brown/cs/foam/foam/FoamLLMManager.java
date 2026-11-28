@@ -35,7 +35,7 @@
 
 package edu.brown.cs.foam.foam;
 
-
+import org.w3c.dom.Element;
 
 /**
  * Interface for integrating with LLMs for code generation and analysis.
@@ -60,7 +60,7 @@ public interface FoamLLMManager extends FoamConstants
  * @test Test that invalid query throws appropriate exception
  * @test Test that response parsing handles various formats correctly
  */
-String sendQuery(String query) throws FoamException;
+Element sendQuery(String query) throws FoamException;
 
 /**
  * Clear LLM memory

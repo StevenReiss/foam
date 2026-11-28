@@ -25,6 +25,7 @@ package edu.brown.cs.foam.felt;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,7 +38,6 @@ import edu.brown.cs.foam.fide.FideSystem;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamElement;
 import edu.brown.cs.foam.foam.FoamException;
-import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
 import edu.brown.cs.foam.foam.FoamProjectManager;
 import edu.brown.cs.ivy.file.IvyFile;
 import edu.brown.cs.ivy.file.IvyLog;
@@ -56,7 +56,6 @@ public class FeltManager implements FoamDocumentManager,
 
 private FideSystem      foam_main;
 private FoamProjectManager project_manager;
-private FoamFileHierarchyManager file_manager;
 
 private Map<File,DocumentInfo>  document_map;
 
@@ -72,7 +71,6 @@ public FeltManager(FideSystem sys)
 {
    foam_main = sys;
    project_manager = foam_main.getProjectManager();
-   file_manager = foam_main.getHierarchyManager();
    document_map = new HashMap<>();
    
    loadProject();
@@ -95,7 +93,7 @@ public void setProject()
 private void loadProject() 
 {
    try {
-      File f1 = file_manager.getResourcesDirectory();
+      File f1 = project_manager.getResourcesDirectory();
       if (f1.exists() && f1.isDirectory()) {
          for (File fx : f1.listFiles()) {
             if (fx.getName().startsWith(".")) continue;
@@ -103,7 +101,7 @@ private void loadProject()
             document_map.put(fx,di);
           }
        }
-      File f2 = file_manager.getSpecificationDirectory();
+      File f2 = project_manager.getSpecificationDirectory();
       if (f2.exists() && f2.isDirectory()) {
          for (File fx : f2.listFiles()) {
             FoamDocumentType fdt = null;
@@ -116,14 +114,13 @@ private void loadProject()
             else if (nm.equals("FEATURES")) fdt = FoamDocumentType.FEATURES;
             else if (nm.equals("OVERVIEW")) fdt = FoamDocumentType.OVERVIEW;
             else if (nm.equals("ARCHITECTURE")) fdt = FoamDocumentType.ARCHITECTURE;
-            else if (nm.startsWith("IMAGE")) fdt = FoamDocumentType.UI_IMAGE;
             if (fdt != null) {
                DocumentInfo di = new DocumentInfo(fx,fdt);
                document_map.put(fx,di);
              }
           }
        }
-      File f3 = file_manager.getLibDirectory();
+      File f3 = project_manager.getLibDirectory();
       if (f3.exists() && f3.isDirectory()) {
          for (File fx : f3.listFiles()) {
             if (fx.getName().startsWith(".")) continue;
@@ -131,12 +128,17 @@ private void loadProject()
             document_map.put(fx,di);
           }
        }
-      File f5 = file_manager.getDesignDirectory();
+      File f4 = project_manager.getUIDirectory();
+      if (f4.exists() && f4.isDirectory()) {
+         DocumentInfo di = new DocumentInfo(f4,FoamDocumentType.USER_INTERFACE);
+         document_map.put(f4,di);
+       }
+      File f5 = project_manager.getDesignDirectory();
       if (f5.exists() && f5.isDirectory()) {
          DocumentInfo di = new DocumentInfo(f5,FoamDocumentType.DESIGN);
          document_map.put(f5,di);
        }
-      File f6 = file_manager.getTestsDirectory();
+      File f6 = project_manager.getTestsDirectory();
       if (f6.exists() && f6.isDirectory()) {
          DocumentInfo di = new DocumentInfo(f6,FoamDocumentType.TEST_CASE);
          document_map.put(f6,di);
@@ -171,13 +173,11 @@ private void loadProject()
       case ARCHITECTURE :
       case OVERVIEW :
       case SCENARIO :
-      case UI_DESIGN :
          FeltSectionParser sectpar = new FeltSectionParser(di.getFile());
          root = sectpar.parse();  // outline document
          break;
       case LIBRARY :
       case RESOURCE :
-      case UI_IMAGE :
          String enm = di.getFile().getName();
          int idx = enm.indexOf(".");
          if (idx > 0) enm = enm.substring(0,idx);
@@ -205,6 +205,25 @@ private void loadProject()
              }
           }
          break;
+      case USER_INTERFACE :
+         dir = di.getFile();
+         if (dir.exists() && dir.isDirectory()) {
+            root = new FeltElement(dir.getName(),
+                  FoamElementType.DOCUMENT,null);
+            root.setFile(dir);
+            for (File f : dir.listFiles()) {
+               if (f.getName().endsWith(".md")) {
+                  FeltElement fe = new FeltElement(f.getName(),
+                        FoamElementType.UI_DESCRIPTION,root);
+                  fe.setFile(f);
+                }
+               else if (f.getName().endsWith(".png")) {
+                  FeltElement fe = new FeltElement(f.getName(),
+                        FoamElementType.UI_IMAGE,root);
+                  fe.setFile(f);
+                }
+             }
+          }
       default :
          throw new FoamException("Can't find root element for document type");
     }
@@ -235,25 +254,21 @@ private void loadProject()
       case DESCRIPTION :
       case FEATURES :
       case REQUIREMENTS :
-         dir = file_manager.getSpecificationDirectory();
+         dir = project_manager.getSpecificationDirectory();
          ext = "md";
          break;
       case SCENARIO :
-         dir = file_manager.getScenariosDirectory();
+         dir = project_manager.getScenariosDirectory();
          ext = "md";
          break;
-      case UI_IMAGE :
-      case UI_DESIGN :
-         dir = file_manager.getUIDirectory();
-         ext = "md png";
+      case USER_INTERFACE :
+         dir = project_manager.getUIDirectory();
          break;
       case TEST_CASE :
-         dir = file_manager.getTestsDirectory();
-         ext = "java";
+         dir = project_manager.getTestsDirectory();
          break;
       case DESIGN :
-         dir = file_manager.getDesignDirectory();
-         ext = "java";
+         dir = project_manager.getDesignDirectory();
          break;
     }
    
@@ -299,31 +314,34 @@ private void loadProject()
 /*                                                                              */
 /********************************************************************************/
 
-@Override public void updateDocument(String file,String content)
+@Override public void updateDocument(String filename,String content)
    throws FoamException
 {
-   if (file == null) {
+   if (filename == null) {
       throw new FoamException("File must be specified on updateDocument");
     }
-   File fnm = getDocumentPath(file);
-   DocumentInfo di = document_map.get(fnm);
+   File file = getDocumentPath(filename);
+   DocumentInfo di = document_map.get(file);
    if (di == null) {
       throw new FoamException("File is not known to the system");
     }
    
-   if (content == null) {
-      di.getFile().delete();
-      document_map.remove(fnm);
-      return;
+   if (!file.isDirectory()) {
+      if (!file.isDirectory() && content == null) {
+         di.getFile().delete();
+         document_map.remove(file);
+         return;
+       }
+      
+      if (!content.endsWith("\n")) content += "\n";
+      try (FileWriter fw = new FileWriter(filename)) {
+         fw.write(content);
+       }
+      catch (IOException e) {
+         IvyLog.logE("FELT","Problem updating file",e);
+       }
     }
    
-   if (!content.endsWith("\n")) content += "\n";
-   try (FileWriter fw = new FileWriter(file)) {
-      fw.write(content);
-    }
-   catch (IOException e) {
-      IvyLog.logE("FELT","Problem updating file",e);
-    }
    di.setRootElement(null);
 }
 
@@ -339,33 +357,60 @@ private void loadProject()
 {
    file = file.replace("/",File.separator);
    File f1 = new File(file);
-   if (!f1.isAbsolute()) {
-      File f2 = new File(project_manager.getCurrentProjectDirectory());
-      File f3 = checkFile(f2,file);
-      if (f3 != null) {
-         f1 = f3;
+   File root = new File(project_manager.getCurrentProjectDirectory());
+   
+   if (f1.isAbsolute()) {
+      // make relative to projet
+      f1 = IvyFile.getCanonical(f1);
+      Path p1 = f1.toPath();
+      Path p2 = root.toPath();
+      try {
+         Path p3 = p2.relativize(p1);
+         f1 = p3.toFile();
        }
-      else {
-         String nm = f1.getName();
-         for (String s : FOAM_PROJECT_DIRS) {
-            String s1 = s.replace("/",File.separator);
-            File f4 = new File(f2,s1);
-            File f5 = checkFile(f4,nm);
-            if (f5 != null) {
-               f1 = f5;
-               break;
-             }
-          }
+      catch (IllegalArgumentException e) {
+         throw new FoamException("Path " + file + " is not in project");
        }
     }
-   if (!f1.exists()) {
+   
+   File f3 = findDocumentFile(root,f1);
+   if (f3 == null || !f3.exists()) {
       throw new FoamException("File " + file + " not found");
     }
    
-   f1 = IvyFile.getCanonical(f1);
+   f3 = IvyFile.getCanonical(f3);
    
-   return f1;
+   return f3;
 }
+
+
+private File findDocumentFile(File root,File given)
+{
+   File f2 = new File(root,given.getPath());
+   if (document_map.get(f2) != null) return f2;
+   
+   File par = given.getParentFile();
+   if (par != null) {
+      File f1 = findDocumentFile(root,par);
+      if (f1 != null) return f1;
+    }
+  
+   String top = null;
+   for (File par1 = given; par1 != null; par1 = par1.getParentFile()) {
+      if (root.equals(par1.getParentFile())) top = par1.getName();
+    }
+   String nm = given.getName();
+   for (String s : FOAM_PROJECT_DIRS) {
+      if (top == null || top.equals(s)) {
+         File f4 = new File(root,s);
+         File f5 = checkFile(f4,nm);
+         if (f5 != null) return f5;
+       }
+    }
+   
+   return null;
+}
+
 
 
 private File checkFile(File dir,String name)
@@ -476,6 +521,58 @@ private void getAllElements(FoamElement fe,FoamElementType typ,
     }
    for (FoamElement ce : fe.getChildren()) {
       getAllElements(ce,typ,rslt);
+    }
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Get the complete text of a specification                                */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String getSpecificationText(FoamDocumentType type)
+{
+   StringBuffer buf = new StringBuffer();
+   
+   for (DocumentInfo di : document_map.values()) {
+      if (di.getType() == type) {
+         if (!buf.isEmpty()) buf.append("\n\n");
+         appendText(di,buf);
+       }
+    }
+   
+   return buf.toString();
+}
+
+
+private void appendText(DocumentInfo di,StringBuffer buf)
+{
+   if (di.getFile().isDirectory()) {
+      FeltElement fe = di.getRootElement();
+      for (FoamElement fce : fe.getChildren()) {
+         FeltElement ce = (FeltElement) fce;
+         File f1 = ce.getFile();
+         if (f1 != di.getFile()) {
+            try {
+               String cnts = IvyFile.loadFile(di.getFile());
+               if (!buf.isEmpty()) buf.append("\n");
+               buf.append(cnts);
+             }
+            catch (IOException e) {
+               IvyLog.logE("FELT","Problem reading specificaiton",e);
+             }
+          }
+       }
+    }
+   else if (di.getFile().exists()) {
+      try {
+         String cnts = IvyFile.loadFile(di.getFile());
+         buf.append(cnts);
+       }
+      catch (IOException e) {
+         IvyLog.logE("FELT","Problem reading specificaiton",e);
+       }
     }
 }
 

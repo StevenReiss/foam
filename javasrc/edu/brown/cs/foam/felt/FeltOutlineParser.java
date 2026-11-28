@@ -112,7 +112,7 @@ FeltElement parse()
           }
          FeltElement par = stack.peek();
          FeltElement elt = new FeltElement(marker,
-               FoamElementType.OUTLINE_SECTION,par);
+               FoamElementType.OUTLINE_PORTION,par);
          elt.setContent(text.trim());
          elt.setStartLine(lno);
          levels.put(elt,level);

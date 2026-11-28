@@ -37,7 +37,6 @@ import edu.brown.cs.foam.felt.FeltManager;
 import edu.brown.cs.foam.film.FilmLLMManager;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamException;
-import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
 import edu.brown.cs.foam.foam.FoamLLMManager;
 import edu.brown.cs.foam.foam.FoamProjectManager;
 import edu.brown.cs.foam.fspec.FspecManager;
@@ -152,10 +151,7 @@ public FideVersionManager getVersionManager()
 }
 
 
-public FoamFileHierarchyManager getHierarchyManager()
-{
-   return project_manager;
-}
+
 
 
 FideProjectManager getOurProjectManager()

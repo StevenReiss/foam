@@ -135,12 +135,15 @@ public void setProject()
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String sendQuery(String query) throws FoamException
+@Override public Element sendQuery(String query) throws FoamException
 {
-   // method body goes here
+   Element rslt = sendLimbaMessage("ASKLIMBA",null,query);
 
-   return null;
+   return rslt;
 }
+
+
+
 
 
 
@@ -180,10 +183,10 @@ public void setProject()
     }
    
    if (base == null) return ptxt;
-   if (ptxt == null) return base;
+   if (ptxt == null) return null;                 // command must be in prompts file
    if (!useboth) return ptxt;
    
-   return base + " " + ptxt;
+   return base + "\n" + ptxt;
 }
 
 
@@ -278,8 +281,7 @@ private boolean startLimba()
    List<String> args = new ArrayList<>();
    args.add(IvyExecQuery.getJavaPath());
    
-   File f2 = getDropinDirectory();
-   File jarfile = new File(f2,"limba.jar");
+   File jarfile = getLimbaBinary();
    
    String xcp = foam_main.getProperty("Foam.limba.class.path",null);
    if (xcp == null) {
@@ -395,14 +397,14 @@ private boolean startLimba()
 
 
 
-private File getDropinDirectory()
+private File getLimbaBinary()
 {
    String cp = System.getProperty("java.class.path");
    StringTokenizer tok = new StringTokenizer(cp,File.pathSeparator);
    while (tok.hasMoreTokens()) {
       String pe = tok.nextToken();
       File pf = new File(pe);
-      if (pf.getName().equals("diad.jar")) {
+      if (pf.getName().equals("foam.jar")) {
          File ppf = pf.getParentFile();
          return ppf;
        }
@@ -414,7 +416,8 @@ private File getDropinDirectory()
    File f0 = new File(pro);
    File f1 = new File(f0,"bubbles");
    File f2 = new File(f1,"dropins");
-   return f2;
+   File f3 = new File(f2,"limba.jar");
+   return f3;
 }
 
 

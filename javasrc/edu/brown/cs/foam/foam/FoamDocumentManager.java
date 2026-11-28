@@ -89,7 +89,6 @@ FoamDocumentType getDocumentType(String filename) throws FoamException;
 /**
  * Identifies elements within a document.
  * 
- * @param projectDirectory The absolute path to the project directory
  * @param fileName The name of the file to process
  * @param elementType The type of element to identify
  * @return A list of identified elements
@@ -106,8 +105,7 @@ List<FoamElement> identifyElements(String fileName,FoamElementType elementType)
 /**
  * Gets the absolute path to a document.
  * 
- * @param projectDirectory The absolute path to the project directory
- * @param fileName The name of the file to locate
+ * @param fileName The name of the file or element to locate
  * @return The absolute path to the document
  * @throws FoamException if document cannot be located
  * @see II.D.4 - System shall support document identification by absolute path, relative path, or filename
@@ -121,7 +119,6 @@ File getDocumentPath(String fileName)
 /**
  * Updates a document with new content.
  * 
- * @param projectDirectory The absolute path to the project directory
  * @param fileName The name of the file to update
  * @param content The new content for the document
  * @throws FoamException if document update fails due to invalid parameters or file system issues
@@ -137,7 +134,6 @@ void updateDocument(String fileName, String content)
 /**
  * Adds missing information as comments to relevant elements when LLM provides additional details.
  * 
- * @param projectDirectory The absolute path to the project directory
  * @param fileName The name of the file containing LLM output
  * @throws FoamException if comment addition fails
  * @see II.F.3 - System shall add missing information as comments to relevant elements when 
@@ -149,8 +145,15 @@ void updateDocument(String fileName, String content)
 void addCommentsFromLLM(String fileName) 
    throws FoamException;
 
-
+/**
+ * Return the list of all top-level documents
+ **/
 Collection<File> getAllDocuments();
+
+/**
+ * Return the contents of a particular specification type
+ **/
+String getSpecificationText(FoamDocumentType type);
 
 }       // end of interface FoamDocumentManager
 

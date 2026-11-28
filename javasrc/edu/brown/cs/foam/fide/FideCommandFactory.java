@@ -32,6 +32,7 @@ import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamElement;
 import edu.brown.cs.foam.foam.FoamException;
 import edu.brown.cs.foam.foam.FoamLLMManager;
+import edu.brown.cs.foam.foam.FoamSyncManager;
 import edu.brown.cs.foam.foam.FoamVersionManager;
 import edu.brown.cs.ivy.exec.IvyExec;
 import edu.brown.cs.ivy.file.IvyFile;
@@ -97,8 +98,6 @@ FoamCommand createCommand(Element xml)
       case QUERY :
       case STATUS :
       case SYNC :
-      case UPDATE :
-         break;
       default :
          IvyLog.logE("FIDE","Illegal command " + cmd);
          return null;
@@ -134,6 +133,9 @@ FoamCommand createCommand(Element xml)
          break;
       case SHELL :
          rslt = new CommandShell(xml);
+         break;
+      case UPDATE :
+         rslt = new CommandUpdate(xml);
          break;
       case VERSIONS :
          rslt = new CommandVersions(xml);
@@ -315,20 +317,24 @@ private class CommandCreate extends CommandBase {
 private class CommandEdited extends CommandBase {
    
    private String file_name;
+   private String file_contents;
    
    CommandEdited(Element xml) {
       super(xml);
-      file_name = IvyXml.getAttrString(xml,"NAME");
+      file_name = IvyXml.getAttrString(xml,"FILE");
+      file_contents = IvyXml.getTextElement(xml,"CONTENT");
     }
    
    @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
-      String cnts = null;
+      String cnts = file_contents;
       File fnm = foam_main.getDocumentManager().getDocumentPath(file_name);
-      try {
-         cnts = IvyFile.loadFile(fnm);
-       }
-      catch (IOException e) {
-         throw new FoamException("Can't access contents of " + fnm);
+      if (file_contents == null || file_contents.isBlank()) {
+         try {
+            cnts = IvyFile.loadFile(fnm);
+          }
+         catch (IOException e) {
+            throw new FoamException("Can't access contents of " + fnm);
+          }
        }
       foam_main.getDocumentManager().updateDocument(file_name,cnts);
     }
@@ -504,6 +510,31 @@ private class CommandSetModel extends CommandBase {
 }       // end of inner class CommandSetModel
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      UPDATE command to update one spec from another                          */
+/*                                                                              */
+/********************************************************************************/
+
+private class CommandUpdate extends CommandBase {
+
+   private FoamDocumentType source_type;
+   private FoamDocumentType target_type;
+   private boolean preserve_old;
+   
+   CommandUpdate(Element xml) {
+      super(xml);
+      source_type = IvyXml.getAttrEnum(xml,"SOURCE",FoamDocumentType.UNKNOWN);
+      target_type = IvyXml.getAttrEnum(xml,"TARGET",FoamDocumentType.UNKNOWN);
+      preserve_old = IvyXml.getAttrBool(xml,"PRESERVE");
+    }
+   
+   @Override public void localProcess(IvyXmlWriter xw) throws FoamException {
+      FoamSyncManager sm = foam_main.getSpecManager();
+      sm.mapSpecification(source_type,target_type,preserve_old);
+    }
+   
+}       // end of inner class CommandUpdate
 
 }       // end of class FideCommandFactory
 

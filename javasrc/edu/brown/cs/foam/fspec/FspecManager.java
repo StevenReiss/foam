@@ -37,12 +37,14 @@ import java.util.Map;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.foam.fide.FideSystem;
+import edu.brown.cs.foam.film.FilmExpander;
 import edu.brown.cs.foam.foam.FoamChangeRequest;
 import edu.brown.cs.foam.foam.FoamChecker;
 import edu.brown.cs.foam.foam.FoamDocumentManager;
 import edu.brown.cs.foam.foam.FoamElement;
 import edu.brown.cs.foam.foam.FoamException;
-import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
+import edu.brown.cs.foam.foam.FoamLLMManager;
+import edu.brown.cs.foam.foam.FoamProjectManager;
 
 public class FspecManager implements FoamSyncManager, FoamChecker, FspecConstants
 {
@@ -57,6 +59,7 @@ public class FspecManager implements FoamSyncManager, FoamChecker, FspecConstant
 private FideSystem      foam_main;
 private File            status_file;
 private Map<File,DocumentStatus> document_map;
+
 
 
 
@@ -81,7 +84,7 @@ public void setProject()
    if (document_map != null) return;
    
    boolean save = false;
-   FoamFileHierarchyManager hm = foam_main.getHierarchyManager();
+   FoamProjectManager hm = foam_main.getProjectManager();
    try {
       File mdir = hm.getMetadataDirectory();
       status_file = new File(mdir,"SyncStatus.xml"); 
@@ -235,11 +238,34 @@ private void outputStatus(File file,IvyXmlWriter xw) throws FoamException
 /*                                                                              */
 /********************************************************************************/
 
-@Override public void mapSpecification(FoamDocumentType source,FoamDocumentType target,
+@Override public void mapSpecification(FoamDocumentType source, 
+      FoamDocumentType target,
       boolean preserve) 
    throws FoamException
 {
-   // method body goes here
+   FoamDocumentManager dm = foam_main.getDocumentManager();
+   FoamLLMManager llmer = foam_main.getLLMManager();
+   String cmdname = source.toString() + "-" + target.toString();
+   String prompt = llmer.getPrompt(cmdname);
+   if (prompt == null) {
+      throw new FoamException("Illegal mapping");
+    }
+   
+   Map<String,String> context = new HashMap<>();
+   String src = dm.getSpecificationText(source);
+   context.put("SOURCE",src);
+   if (preserve) {
+      String tgt = dm.getSpecificationText(target);
+      if (!tgt.isBlank()) {
+         context.put("TARGET",tgt);
+       }
+    }
+   prompt = FilmExpander.expand(prompt,context);
+   
+   llmer.sendQuery(prompt);
+   // sendLimbaMessage(ASKLIMBA,prompt,...)
+   // parse output & update specification
+   
 }
 
 
@@ -336,6 +362,9 @@ private void updateStatus(DocumentStatus changed)
 { 
    for (DocumentStatus ds : document_map.values()) {
       if (ds == changed) continue;
+      if (ds.outOfDate(changed)) {
+         updateStatus(ds);
+       }
     }
 }
 
@@ -400,8 +429,14 @@ private class DocumentStatus {
       return ds.getUpdatedTime();
     }
    
-   DocumentStatus outOfDate(DocumentStatus ds) {
-      return null;
+   boolean outOfDate(DocumentStatus ds) {
+      if (updated_from == ds.getDocument()) {
+         updated_from = null;
+         updated_time = 0;
+         cur_status = FoamDocumentStatus.OUT_OF_DATE;
+         return true;
+       }
+      return false;
 }
    
    void outputXml(IvyXmlWriter xw) {

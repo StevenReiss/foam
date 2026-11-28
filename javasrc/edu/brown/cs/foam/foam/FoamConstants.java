@@ -36,12 +36,12 @@ package edu.brown.cs.foam.foam;
 public interface FoamConstants {
 
 enum FoamDocumentType {
+   UNKNOWN,
    DESCRIPTION,
    REQUIREMENTS,
    FEATURES,
    SCENARIO,
-   UI_IMAGE,
-   UI_DESIGN,
+   USER_INTERFACE,
    TEST_CASE,
    DESIGN,
    RESOURCE,
@@ -53,9 +53,12 @@ enum FoamDocumentType {
 
 enum FoamElementType {
    DOCUMENT,
+   DESIGN_CLASS,
    DESIGN_ELEMENT,
-   OUTLINE_SECTION,
+   OUTLINE_PORTION,
    SECTION,
+   UI_DESCRIPTION,
+   UI_IMAGE
 }
 
 

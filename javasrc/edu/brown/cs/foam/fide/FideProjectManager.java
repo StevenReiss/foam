@@ -31,12 +31,11 @@ import java.io.OutputStream;
 import java.util.Properties;
 
 import edu.brown.cs.foam.foam.FoamException;
-import edu.brown.cs.foam.foam.FoamFileHierarchyManager;
 import edu.brown.cs.foam.foam.FoamProjectManager;
+import edu.brown.cs.ivy.file.IvyFile;
 import edu.brown.cs.ivy.file.IvyLog;
 
-class FideProjectManager implements FoamProjectManager,
-      FoamFileHierarchyManager, FideConstants
+class FideProjectManager implements FoamProjectManager, FideConstants
 {
 
 
@@ -129,6 +128,7 @@ boolean haveProject()
       throw new FoamException("Project directory can't be empty");
     }
    File dirf = new File(dir);
+   dirf = IvyFile.getCanonical(dirf);
    if (!isProjectDirectory(dirf)) {
       throw new FoamException("Bad project directory");
     }
@@ -302,7 +302,6 @@ private boolean isProjectDirectory(File dirf)
 {
    return getDirectory("tests");
 }
-
 
 
 @Override public File getLibDirectory() throws FoamException

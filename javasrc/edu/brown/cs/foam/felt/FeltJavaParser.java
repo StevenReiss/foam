@@ -91,6 +91,7 @@ FeltElement parse(FeltElement root)
    ASTNode ast = JcompAst.parseSourceFile(cnts);
    FeltElement top = new FeltElement(enm,
          FoamElementType.DESIGN_ELEMENT,root); 
+   top.setFile(for_file);
    ElementBuilder bldr = new ElementBuilder(top);
    ast.accept(bldr);
    
